@@ -1,7 +1,7 @@
 cache/*
 *.pyc
 parse/config.py
-bot/config.py
+config.py
 .idea
 *cred.txt
 *.txt
