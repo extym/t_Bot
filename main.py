@@ -90,13 +90,14 @@ desire_hour = None
 def check_full_date(day, time):
     #date = dict[day][time]
     if  date.get(day) is not None:
-        date[day].append[time]
+        date[day].append(time)
     elif date.get(day) == "proxy_day":
         date.update("proxy_day", desire_hour)
     else:
         # date[day] = desire_day
         # date [time] = desire_hour
         date[day] = [time]
+    sheduler_write(date)
     return date
 
 @bot.message_handler(commands=['stop'])
@@ -208,10 +209,10 @@ def what_can(message):
         desire_hour = str(message.text)
         print("444", date, desire_day)
         #date.update(desire_hour)
-        #current_day = date.get(desire_day)
+        current_day = None
         for key, values in date.items():
             current_day = key
-            date.setdefault(current_day, desire_hour)
+            check_full_date(current_day, desire_hour)
         print("555", date, desire_day, desire_hour, current_day)
         if current_day is not None:
             #date.update(current_day, desire_hour)
