@@ -16,11 +16,12 @@ from datetime import datetime
 
 
 bot = telebot.TeleBot(token)
-desire_day = None
+desire_day = 'proxy_day'
 desire_hour = None
 now = datetime.now()
 sheduler = {}
 date = {}
+book = {}
 customer = dict(name=None, last_name=None, phone=None, nickname=None)
 task = "Запись"
 
@@ -42,23 +43,23 @@ user_markup.row('13:00', '14:00', '15:00', '16:00')
 user_markup.row('17:00', '18:00', '19:00', '20:00')
 
 
-def booking(time, name = None, lastname = None, phone = None):
-    if customer[time] is None:
-        customer[time] = desire_hour
-    if customer[name] is None:
-        customer["name"] = name
-    if customer[lastname] is None:
-        customer["lastname"] = lastname
+class Booking:
+    def __init__(self, time, name, lastname, phone, user_id):
+        self.time = time
+        self.name = name
+        self.lastname = lastname
+        self.phone = phone
+        self.user_id = user_id
+
+
+    # if customer[time] is None:
+    #     customer[time] = desire_hour
+    # if customer[name] is None:
+    #     customer["name"] = name
+    # if customer[lastname] is None:
+    #     customer["lastname"] = lastname
 #     # if customer[phone] is None:
     #     customer[phone] = customer_phone
-
-# def check_busy(day, time):
-#     if sheduler.get(day) is None:
-#         check_full_date(desire_day,desire_hour)
-#         if sheduler[day][time] is not customer:
-#             return True
-#         else:
-#             return False
 
 
 def log(message, answer):
@@ -70,8 +71,9 @@ def log(message, answer):
     print(answer)
 
 def sheduler_write(string):
-    file = open("test.txt", "w")
-    file.write(str(string))
+    file = open("test.txt", "a")
+    file.write(str(string) + '\n')
+    file.write('\n')
     file.close()
 
 
@@ -87,18 +89,22 @@ def handle_start(message):
 desire_day = None
 desire_hour = None
 
-def check_full_date(day, time):
-    #date = dict[day][time]
-    if  date.get(day) is not None:
-        date[day].append(time)
-    elif date.get(day) == "proxy_day":
-        date.update("proxy_day", desire_hour)
-    else:
-        # date[day] = desire_day
-        # date [time] = desire_hour
-        date[day] = [time]
-    sheduler_write(date)
-    return date
+#Проверка
+# def check_full_date(day, time):
+#     book = dict(time, customer)
+#     date = dict(day, book)
+#     if  date.get(day) is not None:
+#         date[day].append(time)
+#     elif date.get(day) == "proxy_day":
+#         date.update("proxy_day", desire_hour)
+#     else:
+#         # date[day] = desire_day
+#         # date [time] = desire_hour
+#         date[day] = [time]
+#     sheduler_write(date)
+#     return date
+
+
 
 @bot.message_handler(commands=['stop'])
 def handle_start(message):
@@ -116,6 +122,7 @@ def help(message):
 #     task = choice(RANDOM_TASKS)
 #     add_todo('сегодня', task)
 #     bot.send_message(message.chat.id, f'Задача {task} добавлена на сегодня')
+
 
 @bot.message_handler(commands=['add'])
 def add(message):
@@ -148,6 +155,16 @@ def calendar_date_choose(message):
         )
     )
 
+# Add day to sheduler for booking
+def add_day(day, book):
+    if day is not None:
+        print(day, desire_day)
+    #     sheduler[day].append(desire_day)
+    # else:
+        sheduler[day] = [desire_day]
+    file = open("test1.txt", "w")
+    file.write(str(sheduler))
+    file.close()
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith(calendar_callback.prefix))
 def callback_inline(call: telebot.types.CallbackQuery):
@@ -157,8 +174,10 @@ def callback_inline(call: telebot.types.CallbackQuery):
     if action == 'DAY':
         bot.send_message(chat_id=call.from_user.id, text=f'Вы выбрали {d_day.strftime("%d.%m.%Y")}',
                          reply_markup=telebot.types.ReplyKeyboardRemove())
+        global desire_day
         desire_day = d_day.strftime("%d.%m.%Y")
-        date = check_full_date(desire_day, desire_hour)
+        global date
+        date = add_day(desire_day, book)
         print("11", date)
         sheduler_write(date)
         if desire_hour is None:  # check_busy(desire_day, desire_hour):
@@ -168,14 +187,21 @@ def callback_inline(call: telebot.types.CallbackQuery):
     elif action == 'CANCEL':
         bot.send_message(chat_id=call.from_user.id, text='Отмена', reply_markup=telebot.types.ReplyKeyboardRemove())
 
-def add_todo(date, customer):
-    if date is not None:
-        sheduler[date].append(customer)
+
+
+# Create booking to desire time for customer to desire day
+def add_book(time, customer):
+    if time is not None:
+        date.update(desire_hour)
+        date[desire_day][desire_hour] = customer
     else:
-        sheduler[date] = [customer]
+        date[time] = [desire_day]
+        date[desire_day][desire_hour] = customer
     file = open("test1.txt", "w")
-    file.write(str(sheduler))
+    file.write(str(date))
     file.close()
+
+
 
 @bot.message_handler(commands=['show'])
 def print_(message):
@@ -208,25 +234,17 @@ def what_can(message):
         global desire_hour
         desire_hour = str(message.text)
         print("444", date, desire_day)
-        #date.update(desire_hour)
-        current_day = None
-        for key, values in date.items():
-            current_day = key
-            check_full_date(current_day, desire_hour)
-        print("555", date, desire_day, desire_hour, current_day)
-        if current_day is not None:
-            #date.update(current_day, desire_hour)
 
-            #check_full_date(desire_day, desire_hour)
-            print("777", date)
-        else:
-            date["proxy_day"] = [desire_hour]
+        date[desire_day] = desire_hour
+
         print("1212121", type(date), date, sheduler)
+
+
         bot.send_message(message.from_user.id, f"Вы выбрали запись на  {desire_hour} часов.")
-        customer["name"] = message.first_name.from_user
-        add_todo(desire_day, desire_hour)
-        print("3", sheduler)
-        if not check_full_date():
+        customer["name"] = message.from_user.username #first_name.from_user
+        add_day(desire_day, desire_hour)
+        print("3", sheduler, customer)
+        if  date[desire_day] == "proxy_day": #not check_full_date():
             bot.send_message(message.from_user.id, "Choose date", reply_markup=calendar.create_calendar(
                 name=calendar_callback.prefix,
                 year=now.year,
@@ -236,9 +254,9 @@ def what_can(message):
         else:
             bot.send_message(message.from_user.id,
                              f"Если правильно понял, Вы хотите записаться на {desire_day}  {desire_hour}")
-            add_todo(desire_day, desire_hour)
+            add_book(desire_hour, customer)
         print("3", sheduler)
-        print("4", add_todo(desire_day, desire_hour))
+        print("4", add_book())
     else:
         answer = "Ничего не понятно. Хотите связаться с оператором?"
         bot.send_message(message.from_user.id, answer)
